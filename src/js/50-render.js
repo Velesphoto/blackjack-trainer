@@ -49,7 +49,18 @@ function dealerTotal() {
   return G.phase === 'dealer' ? '' : 'Dealer shows ' + upLabel(G.dealer[0]);
 }
 function chipList(a) { const r = []; for (const d of [500, 100, 25, 5]) while (a >= d && r.length < 12) { r.push(d); a -= d; } return r; }
-const chipStack = bet => `<div class="cstack">${chipList(bet).slice(0, 7).map((d, k) => `<i class="cs c${d}" style="left:calc(50% - 11px + ${k % 2 ? 4 : -4}px);bottom:${k * 4}px"></i>`).join('')}</div>`;
+/* Chip scatter for this hand: each chip sits slightly differently, and the thrown chips land on exactly these spots */
+const newJitter = () => Array.from({ length: 40 }, () => ({ x: rand(-9, 9), y: rand(-3, 3), r: rand(-30, 30) }));
+const jit = (hi, k) => G.jit[(hi * 7 + k) % 40];
+const STACK_MAX = 7;
+/* hi: which hand. G.fresh = {hand: {from, until}} marks chips still in flight, shown once they land. */
+function chipStack(bet, hi) {
+  const f = G.fresh && G.fresh[hi], wait = f ? Math.max(0, f.until - Date.now()) : 0;
+  return `<div class="cstack">${chipList(bet).slice(0, STACK_MAX).map((d, k) => {
+    const j = jit(hi, k), isNew = f && wait > 0 && k >= f.from;
+    return `<i class="cs c${d}${isNew ? ' new' : ''}" style="left:calc(50% - 11px + ${j.x.toFixed(1)}px);bottom:${(k * 4 + j.y).toFixed(1)}px;transform:rotate(${j.r.toFixed(0)}deg);${isNew ? `animation-delay:${wait}ms` : ''}"></i>`;
+  }).join('')}</div>`;
+}
 
 function renderStatus() {
   const left = Core.cardsLeft(G.shoe) / 52, shown = G.showCount && G.phase !== 'check';
@@ -65,7 +76,10 @@ function render() {
   const game = G.gm === 'game', p = G.phase, row = h => `<div class="cards">${h.cards.map(cardHTML).join('')}</div>`;
   $('dealer').innerHTML = G.dealer.length ? `<div class="cards">${G.dealer.map((c, i) => (i === 1 && !G.holeUp ? backHTML : cardHTML(c))).join('')}</div><div class="tot" data-z="d">${dealerTotal()}</div>` : '';
   $('seats').innerHTML = G.others.map(h => `<div class="hand">${row(h)}<div class="tot" data-z="o">${FINAL.includes(p) ? [K.tot ? handLabel(h.cards) : '', h.res || ''].filter(Boolean).join(' · ') : ''}</div></div>`).join('');
-  $('player').innerHTML = G.hands.length ? `<div class="hands">${G.hands.map((h, i) => `<div class="hand ${p === 'play' && G.cur === i && G.hands.length > 1 ? 'on' : ''}">${row(h)}<div class="tot" data-z="p">${[K.tot ? handLabel(h.cards) : '', game ? usd(h.bet) : ''].filter(Boolean).join(' · ')}</div>${game ? chipStack(h.bet) : ''}</div>`).join('')}</div>` : '';
+  if (G.hands.length) $('player').innerHTML = `<div class="hands">${G.hands.map((h, i) => `<div class="hand ${p === 'play' && G.cur === i && G.hands.length > 1 ? 'on' : ''}">${row(h)}<div class="tot" data-z="p">${[K.tot ? handLabel(h.cards) : '', game ? usd(h.bet) : ''].filter(Boolean).join(' · ')}</div>${game ? chipStack(h.bet, i) : ''}</div>`).join('')}</div>`;
+  /* Game Mode betting: an empty spot with the same layout as the hand, so chips land where they will stay */
+  else $('player').innerHTML = game ? `<div class="hands"><div class="hand"><div class="cards" style="min-height:calc(var(--cw)*1.4)"></div><div class="tot">&nbsp;</div><div class="cstack"></div></div></div>` : '';
+  if (p !== 'bet') document.querySelectorAll('.chip3d.thrown:not(.tmp)').forEach(e => e.remove());
   $('print').innerHTML = (R().h17 ? 'Dealer hits soft 17' : 'Dealer stands on all 17s') + '<br>Blackjack pays ' + BJ_LABEL[R().bj] + ['', '<br>Late surrender offered', '<br>Early surrender offered'][R().sur] + (R().peek ? '' : '<br>No hole card: dealer does not peek');
   const il = $('insline'); il.hidden = !R().ins;
   if (R().ins) il.innerHTML = 'Insurance pays 2 to 1' + (G.ins ? `<span class="chip">${usd(G.ins)}</span>` : '');
@@ -115,16 +129,25 @@ function renderControls() {
 }
 
 /* ---------- betting chips (Game Mode) ---------- */
-function throwChips(amount, hand) {
+/* Throw chips from the controls onto hand `hi`'s stack, starting at chip slot `from`.
+   Chips for the opening bet stay put (the hand's own stack replaces them in the same spot);
+   chips for a double or split are removed once the real stack shows them. */
+function throwChips(amount, hi, from, temp) {
   if (G.gm !== 'game' || reduceMotion()) return;
+  const stack = $('player').querySelectorAll('.hand')[hi] && $('player').querySelectorAll('.hand')[hi].querySelector('.cstack');
+  if (!stack) return;
   const felt = document.querySelector('#table .felt'), fr = felt.getBoundingClientRect(), ox = felt.clientLeft, oy = felt.clientTop;
-  const c = (r, dx) => ({ x: r.left - fr.left - ox + r.width / 2 + (dx || 0), y: r.top - fr.top - oy + r.height / 2 });
-  const s = c($('controls').getBoundingClientRect()), t = c(document.querySelector('#table .row').getBoundingClientRect(), -110);
+  const sr = stack.getBoundingClientRect(), cr = $('controls').getBoundingClientRect();
+  const sx = cr.left - fr.left - ox + cr.width / 2, sy = cr.top - fr.top - oy + cr.height / 2;
   chipList(amount).forEach((d, k) => {
-    const e = el(`<div class="chip3d thrown c${d}">${d}</div>`); felt.append(e);
-    e.style.left = (t.x - 16) + 'px'; e.style.top = (t.y - 16 - k * 4) + 'px';
-    e.animate([{ transform: `translate(${s.x - t.x}px,${s.y - t.y}px) rotate(0) scale(1.3)` }, { transform: `translate(${(s.x - t.x) * .35}px,${(s.y - t.y) * .35 - 70}px) rotate(360deg) scale(1.1)`, offset: .55 }, { transform: 'none' }], { duration: 650, delay: k * 70, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'backwards' });
-    later(() => e.remove(), 650 + k * 70 + 50);
+    const slot = from + k; if (slot >= STACK_MAX) return;
+    const j = jit(hi, slot), tx = sr.left - fr.left - ox + sr.width / 2 + j.x, ty = sr.bottom - fr.top - oy - 11 - (slot * 4 + j.y);
+    const e = el(`<div class="chip3d thrown${temp ? ' tmp' : ''} c${d}">${d}</div>`); felt.append(e);
+    e.style.left = (tx - 16) + 'px'; e.style.top = (ty - 16) + 'px';
+    const end = `scale(.6875) rotate(${j.r}deg)`;
+    e.animate([{ transform: `translate(${sx - tx}px,${sy - ty}px) rotate(0) scale(1.3)` }, { transform: `translate(${(sx - tx) * .35}px,${(sy - ty) * .35 - 70}px) rotate(360deg) scale(1.1)`, offset: .55 }, { transform: end }], { duration: 650, delay: k * 70, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
+    e.style.transform = end;
+    if (temp) later(() => e.remove(), 650 + k * 70 + 80);
   });
 }
 function chipUI() {
@@ -136,7 +159,7 @@ function chipUI() {
   const place = () => {
     if ($('betGo').disabled) return;
     let a = Math.round(cur() / 5) * 5; a = Math.max(5, Math.min(mx, a)); inp.value = a;
-    G.bet = G.lastBet = a; $('betGo').disabled = true; throwChips(a);
+    G.bet = G.lastBet = a; $('betGo').disabled = true; throwChips(a, 0, 0, false);
     const g = G; later(() => { if (G === g && g.alive && g.phase === 'bet') dealRound(); }, 800 + chipList(a).length * 70);
   };
   $('betGo').onclick = place; inp.onkeydown = e => { if (e.key === 'Enter') place(); }; inp.select();

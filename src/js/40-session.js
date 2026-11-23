@@ -88,6 +88,7 @@ function nextRound(first) {
   note += updateSeats();
   Object.assign(G, { note, fb: null, cm: null, result: '', holeUp: false, cur: -1, hands: [], others: [], dealer: [], phase: 'bet', ins: 0 });
   G.bet = Math.max(5, Math.min(G.bet, 100, Math.floor(G.bank / 5) * 5));
+  G.jit = newJitter(); G.fresh = null;
   render();
 }
 
@@ -178,7 +179,7 @@ function act(a) {
   if (G.phase !== 'play') return;
   const h = G.hands[G.cur]; if (!h) return;
   if ((a === 'D' && !canDouble(h)) || (a === 'P' && !canSplit(h)) || (a === 'R' && !canSurr(h)) || (h.fromAce && (a === 'H' || a === 'D'))) return;
-  const up = val(G.dealer[0]), env = envFor(h, devLevel()), d = Core.decide(h.cards, up, env), b = d.play;
+  const hi = G.cur, bet0 = h.bet, up = val(G.dealer[0]), env = envFor(h, devLevel()), d = Core.decide(h.cards, up, env), b = d.play;
   const desc = Core.describe(h.cards, env.canS), upT = 'dealer ' + upLabel(G.dealer[0]), ok = a === b;
   gradeRecord(ok, `${desc} vs ${upT}: ${nameOf(b).toLowerCase()} (you chose ${nameOf(a).toLowerCase()})`);
   G.fb = { ok, t: ok ? `${nameOf(b)} on ${desc} against ${upT} is right.${d.note}` : `${d.note ? 'The count play is' : 'Basic strategy says'} ${nameOf(b).toLowerCase()} on ${desc} against ${upT}.${d.note}` };
@@ -187,10 +188,12 @@ function act(a) {
 
   if (a === 'H') h.cards.push(deal());
   else if (a === 'S') h.done = true;
-  else if (a === 'D') { throwChips(h.bet, h); h.bet *= 2; h.cards.push(deal()); h.done = true; }
+  else if (a === 'D') { G.fresh = { [hi]: { from: chipList(bet0).length, until: Date.now() + 800 } }; h.bet *= 2; h.cards.push(deal()); h.done = true; }
   else if (a === 'R') { h.done = h.surr = true; }
-  else if (a === 'P') splitHand(h);
+  else if (a === 'P') { splitHand(h); G.fresh = { [hi + 1]: { from: 0, until: Date.now() + 800 } }; }
   advance();
+  if (a === 'D') throwChips(bet0, hi, chipList(bet0).length, true);
+  if (a === 'P') throwChips(bet0, hi + 1, 0, true);
   pop(ok);
 }
 function splitHand(h) {
@@ -202,7 +205,6 @@ function splitHand(h) {
   };
   const h1 = mk(c[0]), h2 = mk(c[1]);
   G.hands.splice(G.cur, 1, h1, h2);
-  throwChips(h.bet, h2);
 }
 /* mark finished hands, move to the next live hand, or on to the other players */
 function advance() {

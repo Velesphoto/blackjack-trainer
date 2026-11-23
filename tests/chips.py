@@ -1,0 +1,20 @@
+import sys, os; sys.path.insert(0, os.path.dirname(__file__))
+from h import *
+with sync_playwright() as p:
+    b, pg, errs = open_page(p)
+    to_menu(pg, 'game'); go(pg)
+    pg.evaluate("()=>{const G=__bj.G;G.lastBet=50;document.getElementById('betIn').value=50;document.getElementById('betGo').click()}")
+    pg.wait_for_timeout(820)
+    before = pg.evaluate("()=>[...document.querySelectorAll('.chip3d.thrown')].map(e=>{const r=e.getBoundingClientRect();return [Math.round(r.left+r.width/2),Math.round(r.top+r.height/2)]})")
+    pg.screenshot(path='/tmp/c1.png')
+    pg.wait_for_function("()=>__bj.G.phase!=='bet'", timeout=10000); pg.wait_for_timeout(100)
+    after = pg.evaluate("()=>[...document.querySelectorAll('#player .cs')].map(e=>{const r=e.getBoundingClientRect();return [Math.round(r.left+r.width/2),Math.round(r.top+r.height/2)]})")
+    print('thrown', before, 'stack', after)
+    print('thrown left over', pg.evaluate("()=>document.querySelectorAll('.chip3d.thrown').length"))
+    # jitter differs between hands
+    j1 = pg.evaluate("()=>JSON.stringify(__bj.G.jit[0])")
+    pg.wait_for_timeout(2500)
+    pg.screenshot(path='/tmp/c2.png')
+    pg.evaluate("()=>{const G=__bj.G;if(G.phase==='play')__bj.act('D')}"); pg.wait_for_timeout(300)
+    print('after double stack', pg.evaluate("()=>document.querySelectorAll('#player .cs').length"), 'errs', errs)
+    b.close()
