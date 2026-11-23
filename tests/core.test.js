@@ -1,0 +1,187 @@
+/* Unit tests for src/js/00-core.js. Run: node tests/core.test.js */
+const C = require('../src/js/00-core.js');
+let pass = 0, fail = 0;
+const T = (name, got, exp) => { if (got === exp) pass++; else { fail++; console.log('FAIL', name, 'got', got, 'expected', exp); } };
+const mk = cards => C.handFromRanks(...cards);
+/* One play: builds the rules + environment the way the table does. */
+function play(hand, up, tc, o = {}) {
+  const { decks = 6, h17 = 0, sur = 0, dev = 2, cs = false, cd = true, das = 1, peek = 1, late = false } = o;
+  const rules = { ...C.DEFAULT_RULES, decks, h17, sur, das, peek };
+  return C.decide(hand, up, { rules, lvl: dev, tc, late, canD: cd, canS: cs, canR: !!sur }).play;
+}
+  T('10,10 v4 tc5 S',play(mk([10,10]),4,5,{cs:true}),'S');
+  T('10,10 v4 tc6 P',play(mk([10,10]),4,6,{cs:true}),'P');
+  T('10,10 v5 tc5 P',play(mk([10,10]),5,5,{cs:true}),'P');
+  T('10,10 v5 tc4 S',play(mk([10,10]),5,4,{cs:true}),'S');
+  T('10,10 v6 tc4 P',play(mk([10,10]),6,4,{cs:true}),'P');
+  T('16v9 tc5 S',play(mk([10,6]),9,5),'S');
+  T('16v9 tc4 H',play(mk([10,6]),9,4),'H');
+  T('16v10 tc0 S',play(mk([10,6]),10,0),'S');
+  T('16v10 tc-1 H',play(mk([10,6]),10,-1),'H');
+  T('15v10 tc4 S',play(mk([10,5]),10,4),'S');
+  T('15v10 tc3 H',play(mk([10,5]),10,3),'H');
+  T('13v2 tc-1 S',play(mk([10,3]),2,-1),'S');
+  T('13v2 tc-2 H',play(mk([10,3]),2,-2),'H');
+  T('13v3 tc-2 S',play(mk([10,3]),3,-2),'S');
+  T('13v3 tc-3 H',play(mk([10,3]),3,-3),'H');
+  T('12v2 tc3 S',play(mk([10,2]),2,3),'S');
+  T('12v2 tc2 H',play(mk([10,2]),2,2),'H');
+  T('12v3 tc2 S',play(mk([10,2]),3,2),'S');
+  T('12v4 tc0 S',play(mk([10,2]),4,0),'S');
+  T('12v4 tc-1 H',play(mk([10,2]),4,-1),'H');
+  T('12v5 tc-2 S',play(mk([10,2]),5,-2),'S');
+  T('12v5 tc-3 H',play(mk([10,2]),5,-3),'H');
+  T('12v6 S17 tc-1 S',play(mk([10,2]),6,-1),'S');
+  T('12v6 S17 tc-2 H',play(mk([10,2]),6,-2),'H');
+  T('12v6 H17 tc-3 S',play(mk([10,2]),6,-3,{h17:1}),'S');
+  T('12v6 H17 tc-4 H',play(mk([10,2]),6,-4,{h17:1}),'H');
+  T('11vA S17 tc1 D',play(mk([5,6]),11,1),'D');
+  T('11vA S17 tc0 H',play(mk([5,6]),11,0),'H');
+  T('11vA H17 tc-1 D',play(mk([5,6]),11,-1,{h17:1}),'D');
+  T('11vA H17 tc-2 H',play(mk([5,6]),11,-2,{h17:1}),'H');
+  T('10v10 tc4 D',play(mk([4,6]),10,4),'D');
+  T('10v10 tc3 H',play(mk([4,6]),10,3),'H');
+  T('10vA S17 tc4 D',play(mk([4,6]),11,4),'D');
+  T('10vA S17 tc3 H',play(mk([4,6]),11,3),'H');
+  T('10vA H17 tc3 D',play(mk([4,6]),11,3,{h17:1}),'D');
+  T('10vA H17 tc2 H',play(mk([4,6]),11,2,{h17:1}),'H');
+  T('9v2 tc1 D',play(mk([4,5]),2,1),'D');
+  T('9v2 tc0 H',play(mk([4,5]),2,0),'H');
+  T('9v7 tc3 D',play(mk([4,5]),7,3),'D');
+  T('8v6 tc2 D',play(mk([3,5]),6,2),'D');
+  T('8v6 tc1 H',play(mk([3,5]),6,1),'H');
+  T('softA9 v4 tc6 D',play(mk(['A',9]),4,6),'D');
+  T('softA9 v4 tc5 S',play(mk(['A',9]),4,5),'S');
+  T('softA9 v5 tc5 D',play(mk(['A',9]),5,5),'D');
+  T('softA9 v6 tc4 D',play(mk(['A',9]),6,4),'D');
+  T('softA9 v6 tc3 S',play(mk(['A',9]),6,3),'S');
+  T('softA8 v5 tc1 D',play(mk(['A',8]),5,1),'D');
+  T('softA8 v5 tc0 S',play(mk(['A',8]),5,0),'S');
+  T('softA8 v6 S17 tc1 D',play(mk(['A',8]),6,1),'D');
+  T('softA8 v6 S17 tc0 S',play(mk(['A',8]),6,0),'S');
+  T('softA8 v6 H17 tc-5 D (basic)',play(mk(['A',8]),6,-5,{h17:1}),'D');
+  T('softA6 v2 tc1 D',play(mk(['A',6]),2,1),'D');
+  T('softA6 v2 tc0 H',play(mk(['A',6]),2,0),'H');
+  T('5,5 v10 tc4 D',play(mk([5,5]),10,4,{cs:true}),'D');
+  T('8,8 v10 tc9 P',play(mk([8,8]),10,9,{cs:true}),'P');
+  T('15v9 sur tc2 R',play(mk([10,5]),9,2,{sur:1}),'R');
+  T('15v9 sur tc1 H',play(mk([10,5]),9,1,{sur:1}),'H');
+  T('15v10 sur tc0 R',play(mk([10,5]),10,0,{sur:1}),'R');
+  T('15v10 sur tc-1 H',play(mk([10,5]),10,-1,{sur:1}),'H');
+  T('15vA S17 sur tc1 R',play(mk([10,5]),11,1,{sur:1}),'R');
+  T('15vA S17 sur tc0 H',play(mk([10,5]),11,0,{sur:1}),'H');
+  T('15vA H17 sur tc-1 R',play(mk([10,5]),11,-1,{sur:1,h17:1}),'R');
+  T('15vA H17 sur tc-2 H',play(mk([10,5]),11,-2,{sur:1,h17:1}),'H');
+  T('14v10 sur tc3 R',play(mk([10,4]),10,3,{sur:1}),'R');
+  T('14v10 sur tc2 H',play(mk([10,4]),10,2,{sur:1}),'H');
+  T('16v10 sur any R',play(mk([10,6]),10,-3,{sur:1}),'R');
+  T('3-card 16v10 tc0 S',play(mk([5,5,6]),10,0,{sur:1}),'S');
+  T('2D 10,10v5 tc4 P',play(mk([10,10]),5,4,{decks:2,cs:true}),'P');
+  T('2D 10,10v5 tc3 S',play(mk([10,10]),5,3,{decks:2,cs:true}),'S');
+  T('2D 10,10v4 tc6 P (same as multi)',play(mk([10,10]),4,6,{decks:2,cs:true}),'P');
+  T('2D 10vA S17 tc3 D',play(mk([4,6]),11,3,{decks:2}),'D');
+  T('2D 10vA S17 tc2 H',play(mk([4,6]),11,2,{decks:2}),'H');
+  T('2D 10vA H17 tc2 D',play(mk([4,6]),11,2,{decks:2,h17:1}),'D');
+  T('2D 11vA S17 tc0 D',play(mk([5,6]),11,0,{decks:2}),'D');
+  T('2D 11vA S17 tc-1 H',play(mk([5,6]),11,-1,{decks:2}),'H');
+  T('2D 11vA H17 tc-2 D',play(mk([5,6]),11,-2,{decks:2,h17:1}),'D');
+  T('2D 11vA H17 tc-3 H',play(mk([5,6]),11,-3,{decks:2,h17:1}),'H');
+  T('2D 9v2 S17 tc1 D',play(mk([4,5]),2,1,{decks:2}),'D');
+  T('2D 9v2 H17 tc0 D',play(mk([4,5]),2,0,{decks:2,h17:1}),'D');
+  T('2D 9v2 H17 tc-1 H',play(mk([4,5]),2,-1,{decks:2,h17:1}),'H');
+  T('2D 8v6 tc1 D',play(mk([3,5]),6,1,{decks:2}),'D');
+  T('2D 8v5 tc3 D',play(mk([3,5]),5,3,{decks:2}),'D');
+  T('2D 8v5 tc2 H',play(mk([3,5]),5,2,{decks:2}),'H');
+  T('6D 8v5 tc9 H (only 2D)',play(mk([3,5]),5,9),'H');
+  T('2D softA8 v6 S17 tc0 D',play(mk(['A',8]),6,0,{decks:2}),'D');
+  T('2D softA8 v6 S17 tc-1 S',play(mk(['A',8]),6,-1,{decks:2}),'S');
+  T('2D 15vA S17 sur tc2 R',play(mk([10,5]),11,2,{decks:2,sur:1}),'R');
+  T('2D 15vA S17 sur tc1 H',play(mk([10,5]),11,1,{decks:2,sur:1}),'H');
+  T('2D 15vA H17 sur tc0 R',play(mk([10,5]),11,0,{decks:2,sur:1,h17:1}),'R');
+  T('2D 15vA H17 sur tc-1 H',play(mk([10,5]),11,-1,{decks:2,sur:1,h17:1}),'H');
+  T('L1 softA9 v4 tc6 S',play(mk(['A',9]),4,6,{dev:1}),'S');
+  T('L1 10,10v4 tc6 S',play(mk([10,10]),4,6,{dev:1,cs:true}),'S');
+  T('L1 12v6 H17 tc-2 S (uses -1? no: -2 < -1 => H)',play(mk([10,2]),6,-2,{dev:1,h17:1}),'H');
+  T('L1 11vA H17 tc-5 D (basic)',play(mk([5,6]),11,-5,{dev:1,h17:1}),'D');
+  T('L1 16v9 tc5 S',play(mk([10,6]),9,5,{dev:1}),'S');
+  T('L1 2D 8v5 tc9 H',play(mk([3,5]),5,9,{dev:1,decks:2}),'H');
+  T('L0 16v10 tc9 H',play(mk([10,6]),10,9,{dev:0}),'H');
+
+/* ---- insurance ---- */
+const ctx6 = { decks: 6, h17: false, late: false }, ctx2 = { decks: 2, h17: false, late: false };
+T('ins multi', C.insuranceIndex(2, ctx6), 3);
+T('ins 2D early', C.insuranceIndex(2, ctx2), 2.5);
+T('ins 2D late', C.insuranceIndex(2, { ...ctx2, late: true }), 2);
+T('ins L1', C.insuranceIndex(1, ctx6), 3);
+T('ins off', C.insuranceIndex(0, ctx6), null);
+T('ins take', C.insuranceDecision(2, ctx6, 3).take, true);
+T('ins decline', C.insuranceDecision(2, ctx6, 2.9).take, false);
+T('ins basic never', C.insuranceDecision(0, ctx6, 9).take, false);
+
+/* ---- true count conversion ---- */
+T('tc 6D full', C.trueCount(12, 6, 312), 2);
+T('tc 6D 3.8 left', C.trueCount(12, 6, 52 * 4 - 10), 3);
+T('tc 6D .4 left', C.trueCount(12, 6, 20), 12);
+T('tc 2D full', C.trueCount(6, 2, 104), 3);
+T('tc 2D 1.2 left', C.trueCount(6, 2, 62), 6);
+T('tc 2D .1 left', C.trueCount(6, 2, 5), 12);
+T('tc 8D', C.trueCount(16, 8, 416), 2);
+
+/* ---- counting systems: full-deck balance and KO start ---- */
+for (const k of ['hilo', 'hiopt2', 'omega2']) {
+  const deck = C.makeShoe(1).cards;
+  T(k + ' balanced', deck.reduce((s, c) => s + C.tag(k, c), 0), 0);
+}
+T('ko unbalanced +4/deck', C.makeShoe(1).cards.reduce((s, c) => s + C.tag('ko', c), 0), 4);
+T('ko IRC 6D', C.startCount('ko', 6), -20);
+T('ko IRC 8D', C.startCount('ko', 8), -28);
+T('hilo start', C.startCount('hilo', 6), 0);
+
+/* ---- new rules ---- */
+const R = o => ({ ...C.DEFAULT_RULES, h17: 0, sur: 0, ...o });
+const dec = (cards, up, rules, extra = {}) => C.decide(cards, up, { rules, lvl: 0, tc: 0, canD: true, canS: false, canR: false, ...extra }).play;
+T('DAS 2,2 v2 P', dec(mk([2, 2]), 2, R({ das: 1 }), { canS: true }), 'P');
+T('no DAS 2,2 v2 H', dec(mk([2, 2]), 2, R({ das: 0 }), { canS: true }), 'H');
+T('no DAS 2,2 v4 P', dec(mk([2, 2]), 4, R({ das: 0 }), { canS: true }), 'P');
+T('no DAS 3,3 v3 H', dec(mk([3, 3]), 3, R({ das: 0 }), { canS: true }), 'H');
+T('no DAS 6,6 v2 H', dec(mk([6, 6]), 2, R({ das: 0 }), { canS: true }), 'H');
+T('no DAS 6,6 v3 P', dec(mk([6, 6]), 3, R({ das: 0 }), { canS: true }), 'P');
+T('DAS 6,6 v2 P', dec(mk([6, 6]), 2, R({ das: 1 }), { canS: true }), 'P');
+T('no DAS 4,4 v5 H', dec(mk([4, 4]), 5, R({ das: 0 }), { canS: true }), 'H');
+T('DAS 4,4 v5 P', dec(mk([4, 4]), 5, R({ das: 1 }), { canS: true }), 'P');
+T('no DAS 8,8 v6 P', dec(mk([8, 8]), 6, R({ das: 0 }), { canS: true }), 'P');
+T('ENHC 11 vA H', dec(mk([5, 6]), 11, R({ peek: 0 })), 'H');
+T('peek 11 vA S17 H', dec(mk([5, 6]), 11, R({ peek: 1, h17: 0 })), 'H');
+T('peek 11 vA H17 D', dec(mk([5, 6]), 11, R({ peek: 1, h17: 1 })), 'D');
+T('ENHC 8,8 vA H', dec(mk([8, 8]), 11, R({ peek: 0 }), { canS: true }), 'H');
+T('ENHC 8,8 v10 H', dec(mk([8, 8]), 10, R({ peek: 0 }), { canS: true }), 'H');
+T('ENHC 8,8 v9 P', dec(mk([8, 8]), 9, R({ peek: 0 }), { canS: true }), 'P');
+T('ENHC A,A vA H', dec(mk(['A', 'A']), 11, R({ peek: 0 }), { canS: true }), 'H');
+T('ENHC no idx vs 10', C.decide(mk([10, 6]), 10, { rules: R({ peek: 0 }), lvl: 2, tc: 5, canD: true, canS: false, canR: false }).play, 'H');
+T('peek idx vs 10', C.decide(mk([10, 6]), 10, { rules: R({ peek: 1 }), lvl: 2, tc: 5, canD: true, canS: false, canR: false }).play, 'S');
+T('early sur 16 vA', C.earlySurrender(mk([10, 6]), 11, R({ sur: 2 })), true);
+T('early sur 16 v10', C.earlySurrender(mk([10, 6]), 10, R({ sur: 2 })), true);
+T('early sur 13 v10 no', C.earlySurrender(mk([10, 3]), 10, R({ sur: 2 })), false);
+T('early sur 6 vA', C.earlySurrender(mk([2, 4]), 11, R({ sur: 2 })), true);
+T('early sur 8,8 vA', C.earlySurrender(mk([8, 8]), 11, R({ sur: 2 })), true);
+T('early sur 8,8 v10 no', C.earlySurrender(mk([8, 8]), 10, R({ sur: 2 })), false);
+T('early sur off for late', C.earlySurrender(mk([10, 6]), 11, R({ sur: 1 })), false);
+T('early sur 17 vA S17 no', C.earlySurrender(mk([10, 7]), 11, R({ sur: 2, h17: 0 })), false);
+T('early sur 17 vA H17', C.earlySurrender(mk([10, 7]), 11, R({ sur: 2, h17: 1 })), true);
+T('late sur not when early', dec(mk([10, 6]), 10, R({ sur: 2 }), { canR: true }), 'H');
+T('late sur 16v10', dec(mk([10, 6]), 10, R({ sur: 1 }), { canR: true }), 'R');
+T('late sur blocked after split', dec(mk([10, 6]), 10, R({ sur: 1 }), { canR: false }), 'H');
+
+/* ---- shoe ---- */
+const sh = C.makeShoe(8, 0.5);
+T('8 decks', sh.cards.length, 416);
+T('cut card', sh.cutAt, 416 - 26);
+T('spread', C.spreadReport([], R({})), null);
+const rep = C.spreadReport([{ tc: 0, bet: 25 }, { tc: 0, bet: 25 }, { tc: 4, bet: 25 }, { tc: 4, bet: 100 }], R({}));
+T('spread unit', rep.unit, 25);
+T('spread left positive', rep.left > 0, true);
+T('edge rises with count', C.edgePct(R({}), 3) > C.edgePct(R({}), 0), true);
+T('6:5 worse', C.edgePct(R({ bj: 1.2 }), 0) < C.edgePct(R({ bj: 1.5 }), 0), true);
+
+console.log(`${pass + fail} checks, ${fail} failed`);
+process.exit(fail ? 1 : 0);

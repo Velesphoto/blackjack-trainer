@@ -1,0 +1,49 @@
+/* ===== Intro decks, mode menus, House Rules book ===== */
+#intro{position:fixed;inset:0;z-index:90;background:#4b2e1b;overflow:auto;display:grid;place-items:center}
+#intro.m{align-content:start;padding:76px 12px 120px}
+.deck{position:absolute;left:50%;top:50%;width:min(60vw,300px);aspect-ratio:3/2;border-radius:12px;display:grid;place-items:center;text-align:center;font:700 clamp(1.3rem,5vw,2.1rem)/1.1 Fraunces,Georgia,serif;color:#3b2a18;cursor:pointer;border:6px solid #fff9;background-color:var(--dc);background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2240%22%3E%3Cpath d=%22M2 12q7-9 14 0t14 0 14 0M2 32q7-9 14 0t14 0 14 0%22 fill=%22none%22 stroke=%22white%22 stroke-opacity=%22.6%22 stroke-width=%222%22/%3E%3C/svg%3E');box-shadow:0 5px 0 #0003,0 10px 0 #0002,0 18px 30px #000a;transition:transform .9s ease,opacity .5s;transform:translate(-50%,-50%) rotate(-4deg)}
+.dk1{--dc:#f3a3a0}.dk2{--dc:#a5cdf2;--dx:-15%;transform:translate(var(--dx),-5%) rotate(6deg)}
+.deck .dkt{background:#fff9;padding:6px 14px;border-radius:8px}
+#intro.s0 .dk1{animation:spin1 2.6s cubic-bezier(.12,.8,.2,1) both}
+#intro.s0 .dk1 .dkt{animation:fadeIn .9s 1.9s both}
+@keyframes spin1{from{transform:translate(-50%,-50%) rotate(1800deg) scale(.05)}to{transform:translate(-50%,-50%) rotate(-4deg) scale(1)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#intro.s1 .dk1{transform:translate(-82%,-95%) rotate(-8deg)}
+#intro.s1 .dk2{animation:spin2 1.8s cubic-bezier(.12,.8,.2,1) both}
+@keyframes spin2{from{transform:translate(var(--dx),160vh) rotate(1080deg)}to{transform:translate(var(--dx),-5%) rotate(6deg)}}
+#intro.m .deck{pointer-events:none;opacity:0;animation:none}
+#intro.m .deck.sel{opacity:1;top:0;transform:translate(-50%,-72%) scale(.55)}
+@media(max-width:640px){.dk2{--dx:-34%}}
+.menu{width:min(94vw,780px);display:grid;grid-template-columns:1fr 1fr;gap:16px 20px}
+.mcard{position:relative;background:var(--ivory);color:#2a1e12;border-radius:14px;padding:22px 24px;box-shadow:0 10px 26px #0008;transform:rotate(var(--rot,0deg));animation:dealIn .9s cubic-bezier(.1,.8,.2,1) both;animation-delay:calc(var(--i,0)*.2s)}
+.mcard::before,.mcard::after{content:attr(data-i);position:absolute;font:700 .95rem Fraunces,Georgia,serif;color:#7a1e2b}
+.mcard::before{top:7px;left:11px}.mcard::after{bottom:7px;right:11px;transform:rotate(180deg)}
+.mcard h3{margin:0 0 4px;font:700 1.25rem Fraunces,Georgia,serif}
+.mcard.late{display:none}.mcard.late.in{display:block}
+.mcard .seg button,.pg .seg button{color:#3b2a18;border-color:#8a6a35;font-size:.85rem;min-width:0;padding:8px 10px}
+.mcard .seg button[aria-pressed=true],.pg .seg button[aria-pressed=true]{background:#6b1f2a;color:#f7f2e5;border-color:#6b1f2a}
+.mcard .small,.mcard p{color:#6b5638;margin:.3rem 0}
+.mcard .btn.ghost{color:#3b2a18;border-color:#8a6a35}
+.mcard .rule{border-top:1px dashed #8a6a3566;margin:.6rem 0}
+@keyframes dealIn{from{transform:translateY(-120vh) rotate(-28deg)}to{transform:rotate(var(--rot,0deg))}}
+@media(max-width:640px){.menu{grid-template-columns:1fr}.mcard{grid-column:1!important;grid-row:auto!important}}
+#backDecks{position:fixed;left:14px;top:14px;display:none;z-index:96}#intro.m #backDecks{display:block}
+#bookBtn{position:fixed;right:18px;bottom:18px;width:78px;height:96px;border:0;cursor:pointer;display:none;background:linear-gradient(160deg,#6b1f2a,#3e0f17);border-radius:4px 8px 8px 4px;border-left:10px solid #2a0a10;box-shadow:inset 0 0 0 2px var(--brass),6px 8px 0 -2px #e8dcc0,0 10px 24px #000a;transform:rotate(-6deg);color:var(--brass);font:700 .85rem/1.1 Fraunces,Georgia,serif;letter-spacing:.06em;z-index:96}
+#intro.m #bookBtn{display:block}
+/* House Rules book */
+#book{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.8);display:grid;place-items:center;opacity:0;transition:opacity .4s;padding:12px}
+#book.open{opacity:1}
+.bk{position:relative;width:min(96vw,880px);height:min(84vh,540px);perspective:1800px;transform:translateX(-25%);transition:transform .9s ease .1s}
+#book.open .bk{transform:none}
+.pg{position:absolute;top:0;bottom:0;width:50%;padding:22px 22px 18px;overflow:auto;color:#2a1e12;background:linear-gradient(90deg,#e9dbb9,#f7edd2 12%,#f3e7c9);box-shadow:0 18px 50px #000a}
+.pg.r{right:0;border-radius:0 12px 12px 0}
+.pg.l{left:0;border-radius:12px 0 0 12px;transform-origin:right center;opacity:0;background:linear-gradient(270deg,#e9dbb9,#f7edd2 12%,#f3e7c9)}
+#book.open .pg.l{animation:pgl .55s ease-out .75s forwards}
+@keyframes pgl{from{transform:rotateY(90deg);opacity:1}to{transform:none;opacity:1}}
+.cv{position:absolute;right:0;top:0;bottom:0;width:50%;z-index:3;pointer-events:none;border-radius:0 12px 12px 0;transform-origin:left center;background:linear-gradient(160deg,#6b1f2a,#3e0f17);border:3px solid var(--brass);display:grid;place-items:center;font:700 clamp(1.4rem,4vw,2.2rem) Fraunces,Georgia,serif;color:var(--brass);text-align:center;box-shadow:0 18px 50px #000a}
+#book.open .cv{animation:cvo .5s ease-in .25s forwards}
+@keyframes cvo{to{transform:rotateY(-90deg)}}
+.pg h2{font-size:1.5rem;color:#4a1d22}.pg .small{color:#6b5638;margin:.2rem 0 .6rem}
+@media(max-width:640px){.bk{height:min(90vh,720px);transform:translateY(-12%)}.pg{width:100%;height:50%;left:0;right:0}.pg.l{top:0;bottom:auto;border-radius:12px 12px 0 0;transform-origin:center bottom}.pg.r{top:auto;bottom:0;border-radius:0 0 12px 12px}.cv{width:100%;height:50%;top:auto;bottom:0;transform-origin:center top;border-radius:0 0 12px 12px}#book.open .cv{animation-name:cvoN}#book.open .pg.l{animation-name:pglN}}
+@keyframes cvoN{to{transform:rotateX(90deg)}}
+@keyframes pglN{from{transform:rotateX(-90deg);opacity:1}to{transform:none;opacity:1}}

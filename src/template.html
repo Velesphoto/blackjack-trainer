@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Shoe Room: Blackjack strategy and count trainer</title>
+<meta name="theme-color" content="#120d0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shoe Room">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/*{{CSS}}*/
+</style>
+</head>
+<body>
+<button class="btn ghost cbtn" id="chartBtn">Strategy chart</button>
+<label class="ptog" id="popTog"><span class="small">Pop-up</span><span class="sw"><input type="checkbox" id="popChk"><i></i></span></label>
+
+<!-- Intro decks and the Practice / Game menus -->
+<div id="intro" class="s0">
+  <div class="deck dk1" id="dk1"><span class="dkt" id="dkt1">The Shoe Room</span></div>
+  <div class="deck dk2" id="dk2" hidden><span class="dkt">Practice<br>Mode</span></div>
+  <div class="menu" id="menu" hidden></div>
+  <button class="btn ghost" id="backDecks">Back</button>
+  <button id="bookBtn" aria-label="Da Rules"><span>DA<br>RULES</span></button>
+</div>
+
+<div class="wrap">
+  <section id="table" hidden>
+    <div class="felt">
+      <div class="zone" id="dealer"></div>
+      <div class="shoe" id="shoe"></div>
+      <div class="print" id="print"></div>
+      <div class="insline" id="insline" hidden></div>
+      <div class="row"><div id="seats" class="seats"></div><div class="zone" id="player"></div></div>
+      <div class="msg" id="msg" aria-live="polite"></div>
+      <div id="controls"></div>
+    </div>
+    <div class="bar" id="tbar">
+      <div class="stat" id="status"></div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+        <span id="heatBox" hidden>Heat <span id="heatBar"><i style="width:0"></i></span></span>
+        <label><span class="sw"><input type="checkbox" id="tCount"><i></i></span> Show count</label>
+        <label><span class="sw"><input type="checkbox" id="tHint"><i></i></span> Strategy hints</label>
+        <button class="btn ghost" id="accBtn" disabled>View accuracy</button>
+        <button class="btn ghost" id="end">End session</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Burst drill, flashcards, mistake review and deck estimation all render here -->
+  <section id="drill" hidden>
+    <div class="bar"><div class="stat" id="dStat"></div><button class="btn ghost" id="dEnd">End session</button></div>
+    <div class="felt" style="min-height:420px;justify-content:center"><div class="stage" id="dStage"></div><div class="msg" id="dMsg" aria-live="polite"></div><div id="dCtl"></div></div>
+  </section>
+  <section id="results" class="res" hidden></section>
+  <div id="miniHold" class="small" hidden>Mini player is running. Press Esc in it to finish the session.</div>
+</div>
+
+<!-- House Rules book -->
+<div id="book" hidden role="dialog" aria-modal="true" aria-label="House rules"><div class="bk">
+  <div class="pg l" id="bkL"></div>
+  <div class="pg r" id="bkR"></div>
+  <div class="cv"><div>House<br>Rules</div></div>
+</div></div>
+
+<!-- Modals -->
+<div class="modal" id="chartM" hidden role="dialog" aria-modal="true" aria-label="Strategy charts"><div class="mbox">
+  <div class="mhead"><h2>Basic strategy</h2><button class="btn ghost sm" id="chartX">Close</button></div>
+  <div class="seg" id="chartTabs" style="margin:6px 0 10px"><button data-t="0" aria-pressed="true">Basic strategy</button><button data-t="1">Deviations</button></div>
+  <div id="chartB"></div>
+</div></div>
+<div class="modal" id="accM" hidden role="dialog" aria-modal="true" aria-label="Decision accuracy"><div class="mbox">
+  <div class="mhead"><h2>Decision accuracy</h2><button class="btn ghost sm" id="accX">Close</button></div>
+  <div id="accB"></div>
+</div></div>
+<div class="modal" id="progM" hidden role="dialog" aria-modal="true" aria-label="Progress"><div class="mbox">
+  <div class="mhead"><h2>Progress</h2><button class="btn ghost sm" id="progX">Close</button></div>
+  <div id="progB"></div>
+</div></div>
+
+<script>
+/*{{JS}}*/
+</script>
+</body>
+</html>
