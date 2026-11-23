@@ -11,10 +11,15 @@ document.addEventListener('keydown', e => {
     if ((G.phase === 'play' || G.phase === 'esur') && one && 'HSDPR'.includes(k)) act(k);
     else if (G.phase === 'esur' && k === 'N') early(false);
     else if (G.phase === 'insure') { if (k === 'Y') takeIns(1); else if (k === 'N') takeIns(0); }
+  } else if (G.kind === 'deckrun') {
+    if (G.phase === 'flip' && (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight')) { e.preventDefault(); runNext(); }
   } else if (G.kind === 'quiz') {
     if (G.phase === 'ask') {
       const q = G.q;
-      if (q.type === 'ins') { if (k === 'Y') answerQ('Take'); else if (k === 'N') answerQ('Decline'); }
+      if (q.type === 'pair') {
+        if (e.key === '-') G.neg = true; else if (e.key === '+') G.neg = false;
+        else if (/^[0-8]$/.test(e.key) && +e.key <= 2 * maxTag()) { const n = (G.neg ? -1 : 1) * +e.key; answerQ(String(n)); }
+      } else if (q.type === 'ins') { if (k === 'Y') answerQ('Take'); else if (k === 'N') answerQ('Decline'); }
       else if (one && 'HSDPR'.includes(k) && (k !== 'D' || q.env.canD) && (k !== 'P' || q.env.canS) && (k !== 'R' || q.env.canR)) answerQ(k);
     }
   }
@@ -25,7 +30,7 @@ $('tHint').onchange = e => { G.hintMove = e.target.checked; if (G.hintMove) G.us
 $('end').onclick = showResults;
 
 /* test hook (read-only view of internals for the browser tests) */
-window.__bj = { get G() { return G; }, get K() { return K; }, Core, PC, GC, STD, act, dealRound, nextRound, submitCountValue, launch, showResults, takeIns, early, trueC };
+window.__bj = { runNext, get G() { return G; }, get K() { return K; }, Core, PC, GC, STD, act, dealRound, nextRound, submitCountValue, launch, showResults, takeIns, early, trueC };
 
 /* start: restore menu choices, show the intro decks */
 loadSettings();

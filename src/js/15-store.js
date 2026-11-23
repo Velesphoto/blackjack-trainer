@@ -3,7 +3,7 @@
    All keys start with "bj-". Everything goes through `store` so storage
    failures never break the app.
    ========================================================================== */
-const KEYS = { hist: 'bj-hist', best: 'bj-best', gmStart: 'bj-gm-start', miss: 'bj-miss', days: 'bj-days', goal: 'bj-goal', set: 'bj-set' };
+const KEYS = { hist: 'bj-hist', best: 'bj-best', gmStart: 'bj-gm-start', miss: 'bj-miss', days: 'bj-days', goal: 'bj-goal', set: 'bj-set', run: 'bj-deckrun' };
 
 /* ---------- session history ---------- */
 const loadHist = () => store.get(KEYS.hist, []);
@@ -71,7 +71,7 @@ function exportBackup() {
   return JSON.stringify({
     app: 'shoe-room', v: 1, saved: new Date().toISOString(),
     hist: loadHist(), best: getBest(), gmStart: store.get(KEYS.gmStart, 200),
-    miss: store.get(KEYS.miss, {}), days: store.get(KEYS.days, {}), goal: store.get(KEYS.goal, { target: 50 }), set: store.get(KEYS.set, null),
+    miss: store.get(KEYS.miss, {}), days: store.get(KEYS.days, {}), goal: store.get(KEYS.goal, { target: 50 }), set: store.get(KEYS.set, null), run: store.get(KEYS.run, { best: null, runs: 0 }),
   });
 }
 /* Returns { ok, msg }. Replaces saved data only after the whole file validates. */
@@ -88,6 +88,7 @@ function importBackup(text) {
   store.set(KEYS.days, o.days && typeof o.days === 'object' ? o.days : {});
   store.set(KEYS.goal, o.goal && num(o.goal.target) ? o.goal : { target: 50 });
   if (o.set && typeof o.set === 'object') store.set(KEYS.set, o.set);
+  if (o.run && typeof o.run === 'object') store.set(KEYS.run, o.run);
   return { ok: true, msg: `Restored ${hist.length} sessions.` };
 }
 async function copyText(t) {

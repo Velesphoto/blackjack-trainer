@@ -23,7 +23,9 @@ function practiceMenu() {
    <button class='btn ghost sm' data-drill='basic'>Basic flashcards</button>
    <button class='btn ghost sm' data-drill='index'>Index flashcards</button>
    <button class='btn ghost sm' data-drill='miss' ${n ? '' : 'disabled'}>Mistake review (${n})</button>
-   <button class='btn ghost sm' data-drill='deck'>Deck estimation</button></div>
+   <button class='btn ghost sm' data-drill='deck'>Deck estimation</button>
+   <button class='btn ghost sm' data-drill='pairs'>Pair counting</button>
+   <button class='btn ghost sm' data-drill='run'>Full-deck run</button></div>
   <p class='small'>Index flashcards use the Count deviations setting (Illustrious 18 when it is Off).</p></div>
 <div class='mcard' data-i='5♣' style='--rot:1deg;--i:4;grid-column:1'><h3>Daily goal</h3>
   <p><b>${done}</b> of <b>${goal}</b> right counts under 3 seconds today${st ? ` · ${st}-day streak` : ''}</p>

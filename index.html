@@ -559,6 +559,8 @@ const store = {
 };
 
 function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+/* focus a button after the current key event finishes, so the Enter/Space that triggered this screen does not also press it */
+const focusSoon = id => setTimeout(() => { const e = $(id); if (e) e.focus(); }, 0);
 function later(fn, ms) { return setTimeout(fn, ms); }
 /* a timer tied to the current session: does nothing if that session has ended or been replaced */
 function laterG(fn, ms) { const g = G; return setTimeout(() => { if (G === g && g.alive) fn(); }, ms); }
@@ -638,7 +640,7 @@ const countPoints = ms => Math.round(ms <= 3000 ? 100 : Math.max(40, 100 - (ms -
    All keys start with "bj-". Everything goes through `store` so storage
    failures never break the app.
    ========================================================================== */
-const KEYS = { hist: 'bj-hist', best: 'bj-best', gmStart: 'bj-gm-start', miss: 'bj-miss', days: 'bj-days', goal: 'bj-goal', set: 'bj-set' };
+const KEYS = { hist: 'bj-hist', best: 'bj-best', gmStart: 'bj-gm-start', miss: 'bj-miss', days: 'bj-days', goal: 'bj-goal', set: 'bj-set', run: 'bj-deckrun' };
 
 /* ---------- session history ---------- */
 const loadHist = () => store.get(KEYS.hist, []);
@@ -706,7 +708,7 @@ function exportBackup() {
   return JSON.stringify({
     app: 'shoe-room', v: 1, saved: new Date().toISOString(),
     hist: loadHist(), best: getBest(), gmStart: store.get(KEYS.gmStart, 200),
-    miss: store.get(KEYS.miss, {}), days: store.get(KEYS.days, {}), goal: store.get(KEYS.goal, { target: 50 }), set: store.get(KEYS.set, null),
+    miss: store.get(KEYS.miss, {}), days: store.get(KEYS.days, {}), goal: store.get(KEYS.goal, { target: 50 }), set: store.get(KEYS.set, null), run: store.get(KEYS.run, { best: null, runs: 0 }),
   });
 }
 /* Returns { ok, msg }. Replaces saved data only after the whole file validates. */
@@ -723,6 +725,7 @@ function importBackup(text) {
   store.set(KEYS.days, o.days && typeof o.days === 'object' ? o.days : {});
   store.set(KEYS.goal, o.goal && num(o.goal.target) ? o.goal : { target: 50 });
   if (o.set && typeof o.set === 'object') store.set(KEYS.set, o.set);
+  if (o.run && typeof o.run === 'object') store.set(KEYS.run, o.run);
   return { ok: true, msg: `Restored ${hist.length} sessions.` };
 }
 async function copyText(t) {
@@ -829,7 +832,9 @@ function practiceMenu() {
    <button class='btn ghost sm' data-drill='basic'>Basic flashcards</button>
    <button class='btn ghost sm' data-drill='index'>Index flashcards</button>
    <button class='btn ghost sm' data-drill='miss' ${n ? '' : 'disabled'}>Mistake review (${n})</button>
-   <button class='btn ghost sm' data-drill='deck'>Deck estimation</button></div>
+   <button class='btn ghost sm' data-drill='deck'>Deck estimation</button>
+   <button class='btn ghost sm' data-drill='pairs'>Pair counting</button>
+   <button class='btn ghost sm' data-drill='run'>Full-deck run</button></div>
   <p class='small'>Index flashcards use the Count deviations setting (Illustrious 18 when it is Off).</p></div>
 <div class='mcard' data-i='5♣' style='--rot:1deg;--i:4;grid-column:1'><h3>Daily goal</h3>
   <p><b>${done}</b> of <b>${goal}</b> right counts under 3 seconds today${st ? ` · ${st}-day streak` : ''}</p>
@@ -1360,7 +1365,7 @@ function renderControls() {
   const c = $('controls'), p = G.phase, game = G.gm === 'game';
   if (p === 'bet') {
     if (game) return chipUI();
-    c.innerHTML = '<div class="acts"><button class="btn" id="dealBtn">Deal</button></div>'; $('dealBtn').onclick = dealRound; $('dealBtn').focus();
+    c.innerHTML = '<div class="acts"><button class="btn" id="dealBtn">Deal</button></div>'; $('dealBtn').onclick = dealRound; focusSoon('dealBtn');
   } else if (p === 'esur') {
     const best = G.hintMove && Core.earlySurrender(G.hands[0].cards, val(G.dealer[0]), R());
     c.innerHTML = `<div class="acts"><button class="btn ${best ? 'hint' : ''}" data-a="R">Surrender</button><button class="btn ghost ${G.hintMove && !best ? 'hint' : ''}" id="esN">Play on</button></div><div class="small" style="text-align:center;margin-top:6px">Early surrender: the dealer has not checked for blackjack yet.</div>`;
@@ -1375,7 +1380,7 @@ function renderControls() {
     c.innerHTML = `<div class="acts">${btn.map(([k, n, on]) => `<button class="btn ${best === k ? 'hint' : ''}" data-a="${k}" ${on ? '' : 'disabled'}>${n}</button>`).join('')}</div><div class="small" style="text-align:center;margin-top:6px">Keys: H, S, D, P${canSurr(h) ? ', R' : ''}</div>`;
   } else if (p === 'others' || p === 'dealer') c.innerHTML = `<div class="acts small">${p === 'others' ? 'Other players act…' : 'Dealer plays…'}</div>`;
   else if (p === 'check') { c.innerHTML = ASK_HTML; bindAsk(submitCount); }
-  else if (p === 'between') { c.innerHTML = '<div class="acts"><button class="btn" id="next">Next hand</button></div>'; $('next').onclick = () => nextRound(); $('next').focus(); }
+  else if (p === 'between') { c.innerHTML = '<div class="acts"><button class="btn" id="next">Next hand</button></div>'; $('next').onclick = () => nextRound(); focusSoon('next'); }
   else c.innerHTML = '<div class="acts"></div>';   /* wait, over */
 }
 
@@ -1600,6 +1605,7 @@ function showResults() {
   ['table', 'drill'].forEach(id => ($(id).hidden = true));
   $('results').hidden = false; document.body.classList.remove('prac');
   if (G.kind === 'table' && G.gm === 'game') gameResults();
+  else if (G.kind === 'deckrun') deckRunResults();
   else if (G.kind === 'quiz' || G.kind === 'deck') quizResults();
   else practiceResults();
 }
@@ -1721,7 +1727,7 @@ function renderBurst() {
   $('dMsg').innerHTML = G.cm ? `<div class="${G.cm.ok ? 'ok' : 'no'}">${G.cm.t}</div>` : '<div class="small">Cards flash one at a time. Keep the count, then enter it.</div>';
   if (p === 'check') { $('dCtl').innerHTML = ASK_HTML; bindAsk(submitBurst); }
   else if (p === 'flash') $('dCtl').innerHTML = '';
-  else { $('dCtl').innerHTML = `<div class="acts"><button class="btn" id="goB">${G.rounds ? 'Next burst' : 'Start burst'}</button></div>`; $('goB').onclick = runBurst; $('goB').focus(); }
+  else { $('dCtl').innerHTML = `<div class="acts"><button class="btn" id="goB">${G.rounds ? 'Next burst' : 'Start burst'}</button></div>`; $('goB').onclick = runBurst; focusSoon('goB'); }
   if (p !== 'flash') $('dStage').innerHTML = '';
 }
 function runBurst() {
@@ -1783,21 +1789,30 @@ function genMiss() {
   return { cards, up: e.u, upCard: upCardOf(e.u), tc: e.lvl ? e.tc : null, lvl: e.lvl, env, answer: d.play, note: d.note, key: e.key };
 }
 
+/* two cards at once: report their net count (+1 and −1 cancel). Answers are strings so 0 and negatives compare cleanly. */
+const maxTag = () => Math.max(...Object.values(Core.SYSTEMS[K.sys].tags).map(Math.abs));
+function genPair() {
+  const cards = [randomCard(pick(Core.RANKS)), randomCard(pick(Core.RANKS))];
+  return { type: 'pair', cards, answer: String(Core.tag(K.sys, cards[0]) + Core.tag(K.sys, cards[1])), note: '', env: {}, tc: null };
+}
+
 function startQuiz(sub) {
+  if (sub === 'run') { startDeckRun(); return; }
   G = { kind: 'quiz', gm: 'practice', sub, n: 0, ok: 0, times: [], miss: [], alive: true, phase: 'ask', q: null, saved: false, checks: [], strat: { ok: 0, n: 0, miss: [] } };
   streak = 0;
   if (sub === 'deck') { G.kind = 'deck'; G.close = 0; G.tcOk = 0; G.tcN = 0; showDrill(); nextDeck(); return; }
   if (sub === 'miss' && !mistakeCount()) { showIntro(); return; }
   showDrill(); nextQ();
 }
-const QTITLE = { basic: 'Basic strategy flashcards', index: 'Index flashcards', miss: 'Mistake review' };
+const QTITLE = { basic: 'Basic strategy flashcards', index: 'Index flashcards', miss: 'Mistake review', pairs: 'Pair counting' };
 function nextQ() {
-  const q = G.sub === 'basic' ? genBasic() : G.sub === 'index' ? genIndex() : genMiss();
+  const q = G.sub === 'basic' ? genBasic() : G.sub === 'index' ? genIndex() : G.sub === 'pairs' ? genPair() : genMiss();
   if (!q) { endDrill(); return; }
   G.q = q; G.phase = 'ask'; G.fbk = null; renderQ(); startClock();
 }
 function renderQ() {
   const q = G.q;
+  if (q.type === 'pair') return renderPair();
   $('dStat').textContent = `${QTITLE[G.sub]} · ${G.ok} right of ${G.n}${G.sub === 'miss' ? ' · ' + mistakeCount() + ' left in review' : ''}`;
   $('dStage').innerHTML = `<div class="q"><div class="small">Dealer shows</div><div class="cards">${cardHTML(q.upCard)}</div>
     <div class="small">${q.type === 'ins' ? 'Your hand (the dealer shows an ace)' : 'Your hand'}</div><div class="cards">${q.cards.map(cardHTML).join('')}</div>
@@ -1808,11 +1823,28 @@ function renderQ() {
     const b = q.type === 'ins' ? [['Take', 'Take insurance (Y)'], ['Decline', 'No insurance (N)']] : [['H', 'Hit'], ['S', 'Stand'], ...(q.env.canD ? [['D', 'Double']] : []), ...(q.env.canS ? [['P', 'Split']] : []), ...(q.env.canR ? [['R', 'Surrender']] : [])];
     $('dCtl').innerHTML = `<div class="acts">${b.map(([k, t]) => `<button class="btn" data-q="${k}">${t}</button>`).join('')}</div>`;
     $('dCtl').querySelectorAll('[data-q]').forEach(x => (x.onclick = () => answerQ(x.dataset.q)));
-  } else { $('dCtl').innerHTML = '<div class="acts"><button class="btn" id="qNext">Next</button></div>'; $('qNext').onclick = nextQ; $('qNext').focus(); }
+  } else { $('dCtl').innerHTML = '<div class="acts"><button class="btn" id="qNext">Next</button></div>'; $('qNext').onclick = nextQ; focusSoon('qNext'); }
+}
+function renderPair() {
+  const q = G.q, m = maxTag();
+  $('dStat').textContent = `Pair counting · ${Core.SYSTEMS[K.sys].name} · ${G.ok} right of ${G.n}`;
+  $('dStage').innerHTML = `<div class="q"><div class="small">Net count of the pair</div><div class="cards">${q.cards.map(cardHTML).join('')}</div></div>`;
+  $('dMsg').innerHTML = G.fbk ? `<div class="${G.fbk.ok ? 'ok' : 'no'}">${G.fbk.t}</div>` : '<div class="small">Keys: a number, with − first for a negative.</div>';
+  if (G.phase === 'ask') {
+    const vals = []; for (let v = -2 * m; v <= 2 * m; v++) vals.push(v);
+    $('dCtl').innerHTML = `<div class="acts">${vals.map(v => `<button class="btn ghost" data-q="${v}">${fmt(v)}</button>`).join('')}</div>`;
+    $('dCtl').querySelectorAll('[data-q]').forEach(x => (x.onclick = () => answerQ(x.dataset.q)));
+  } else { $('dCtl').innerHTML = '<div class="acts"><button class="btn" id="qNext">Next</button></div>'; $('qNext').onclick = nextQ; focusSoon('qNext'); }
 }
 function answerQ(a) {
   if (G.phase !== 'ask') return;
   const q = G.q, dt = stopClock(), ok = a === q.answer, nm = x => PLAY_NAME[x] || x;
+  if (q.type === 'pair') {
+    G.n++; if (ok) G.ok++; G.times.push(dt); G.phase = 'done'; G.neg = false;
+    if (!ok) G.miss.push(`${q.cards.map(c => c.r).join(' + ')} = ${fmt(+q.answer)} (you said ${fmt(+a)})`);
+    G.fbk = { ok, t: ok ? `Net ${fmt(+q.answer)} is right. ${(dt / 1000).toFixed(1)}s.` : `The pair nets ${fmt(+q.answer)}.` };
+    renderQ(); pop(ok); return;
+  }
   G.n++; if (ok) G.ok++; G.times.push(dt); G.phase = 'done';
   if (!ok) G.miss.push(`${q.type === 'ins' ? 'Insurance' : Core.describe(q.cards, q.env.canS)} vs ${upLabel(q.upCard)}${q.tc !== null ? ' at ' + tcFmt(q.tc) : ''}: ${nm(q.answer).toLowerCase()}`);
   G.fbk = { ok, t: ok ? `${nm(q.answer)} is right.${q.note}` : `${nm(q.answer)} is the play.${q.note}${q.type === 'ins' ? ` Index ${fmt(q.index)}.` : ''}` };
@@ -1849,7 +1881,7 @@ function renderDeck() {
     $('dCtl').querySelectorAll('[data-v]').forEach(b => (b.onclick = () => answerDeck(+b.dataset.v)));
   } else if (G.phase === 'tc') {
     $('dCtl').innerHTML = ASK_HTML.replace('Running count?', 'True count?'); bindAsk(answerTC); startClock();
-  } else { $('dCtl').innerHTML = '<div class="acts"><button class="btn" id="qNext">Next</button></div>'; $('qNext').onclick = nextDeck; $('qNext').focus(); }
+  } else { $('dCtl').innerHTML = '<div class="acts"><button class="btn" id="qNext">Next</button></div>'; $('qNext').onclick = nextDeck; focusSoon('qNext'); }
 }
 function answerDeck(g) {
   if (G.phase !== 'est') return;
@@ -1883,6 +1915,56 @@ function quizResults() {
   if ($('revBtn')) $('revBtn').onclick = () => startQuiz('miss');
 }
 
+/* ---------- full-deck run: flip through one deck at your own pace; aim for under 25 seconds with the right count ---------- */
+const RUN_GOAL_MS = 25000;
+function startDeckRun() {
+  G = { kind: 'deckrun', gm: 'practice', alive: true, phase: 'ready', runs: [], i: 0, rc: 0, saved: false, checks: [], strat: { ok: 0, n: 0, miss: [] } };
+  streak = 0; showDrill(); renderRun();
+}
+function renderRun() {
+  const best = store.get(KEYS.run, { best: null, runs: 0 }), p = G.phase, sys = Core.SYSTEMS[K.sys].name;
+  $('dStat').textContent = p === 'flip' ? `Card ${G.i} of 52` : `Full-deck run · ${sys} · best ${best.best ? (best.best / 1000).toFixed(1) + 's' : '–'}`;
+  if (p === 'ready') {
+    $('dStage').innerHTML = '<div class="small" style="max-width:360px">One shuffled deck, one card at a time. Press Space, Enter or Next for each card as fast as you can keep the count. The clock starts on the first card.</div>';
+    $('dMsg').innerHTML = G.fbk ? `<div class="${G.fbk.ok ? 'ok' : 'no'}">${G.fbk.t}</div>` : `<div class="small">Goal: under 25 seconds with the right final count${Core.SYSTEMS[K.sys].balanced ? ' (0 for a full deck)' : ''}.</div>`;
+    $('dCtl').innerHTML = `<div class="acts"><button class="btn" id="runGo">${G.runs.length ? 'Another run' : 'Start'}</button></div>`; $('runGo').onclick = runStart; focusSoon('runGo');
+  } else if (p === 'flip') {
+    $('dCtl').innerHTML = '<div class="acts"><button class="btn" id="runNext">Next card</button><span id="clock">0.0s</span></div>'; $('runNext').onclick = runNext; focusSoon('runNext');
+  } else if (p === 'check') {
+    $('dStage').innerHTML = '<div class="small">Deck finished.</div>'; $('dMsg').innerHTML = '';
+    $('dCtl').innerHTML = ASK_HTML.replace('Running count?', 'Final count?').replace('<span id="clock">0.0s</span>', ''); bindAsk(submitRun);
+  }
+}
+function runStart() {
+  G.shoe = Core.makeShoe(1, 0); G.rc = 0; G.i = 0; G.fbk = null; G.phase = 'flip';
+  renderRun(); showRunCard(); startClock();
+}
+function showRunCard() { const c = G.shoe.cards[G.i++]; G.rc += Core.tag(K.sys, c); $('dStage').innerHTML = cardHTML(c); $('dStat').textContent = `Card ${G.i} of 52`; $('dMsg').innerHTML = ''; }
+function runNext() {
+  if (G.phase !== 'flip') return;
+  if (G.i < 52) { showRunCard(); return; }
+  G.dt = stopClock(); G.phase = 'check'; renderRun();
+}
+function submitRun() {
+  const v = $('cnt').value.trim(); if (!/^-?\d+$/.test(v) || G.phase !== 'check') return;
+  const guess = parseInt(v, 10), ok = guess === G.rc, fast = G.dt <= RUN_GOAL_MS, sec = (G.dt / 1000).toFixed(1);
+  const rec = store.get(KEYS.run, { best: null, runs: 0 }); rec.runs++;
+  if (ok && (rec.best === null || G.dt < rec.best)) rec.best = Math.round(G.dt);
+  store.set(KEYS.run, rec);
+  G.runs.push({ dt: G.dt, ok });
+  G.fbk = { ok: ok && fast, t: ok ? (fast ? `Count ${fmt(G.rc)} is right in ${sec}s. Under 25 seconds: that is table-ready speed.` : `Count ${fmt(G.rc)} is right, but ${sec}s is over the 25 second goal.`) : `You said ${fmt(guess)}. The count was ${fmt(G.rc)}. ${sec}s.` };
+  G.phase = 'ready'; renderRun(); pop(ok && fast);
+}
+function deckRunResults() {
+  const r = G.runs, okR = r.filter(x => x.ok), best = okR.length ? Math.min(...okR.map(x => x.dt)) : null;
+  $('results').innerHTML = !r.length ? '<div class="grade"><div><h2>No runs yet</h2></div></div><p><button class="btn" id="again">Back to menu</button></p>' :
+    `<div class="grade"><div class="g">${okR.length}/${r.length}</div><div><h2>Full-deck runs</h2><div class="small">Right counts out of ${r.length} runs · goal under 25 seconds</div></div></div>
+    <div class="grid">${tile('Best right run', best ? (best / 1000).toFixed(1) + 's' : '–', 'Saved best: ' + ((store.get(KEYS.run, {}).best || 0) / 1000 || '–') + (store.get(KEYS.run, {}).best ? 's' : ''))}${tile('Under 25 seconds', okR.filter(x => x.dt <= RUN_GOAL_MS).length + ' of ' + r.length, 'With the right count')}</div>
+    <div class="log">${r.map((x, i) => `<div><span>Run ${i + 1}</span><span style="color:var(--${x.ok ? 'good' : 'bad'})">${x.ok ? 'Right' : 'Off'} · ${(x.dt / 1000).toFixed(1)}s</span></div>`).join('')}</div>
+    <p style="margin-top:16px"><button class="btn" id="again">Back to menu</button></p>`;
+  $('again').onclick = showIntro;
+}
+
 /* ==========================================================================
    Wiring and start-up
    ========================================================================== */
@@ -1896,10 +1978,15 @@ document.addEventListener('keydown', e => {
     if ((G.phase === 'play' || G.phase === 'esur') && one && 'HSDPR'.includes(k)) act(k);
     else if (G.phase === 'esur' && k === 'N') early(false);
     else if (G.phase === 'insure') { if (k === 'Y') takeIns(1); else if (k === 'N') takeIns(0); }
+  } else if (G.kind === 'deckrun') {
+    if (G.phase === 'flip' && (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight')) { e.preventDefault(); runNext(); }
   } else if (G.kind === 'quiz') {
     if (G.phase === 'ask') {
       const q = G.q;
-      if (q.type === 'ins') { if (k === 'Y') answerQ('Take'); else if (k === 'N') answerQ('Decline'); }
+      if (q.type === 'pair') {
+        if (e.key === '-') G.neg = true; else if (e.key === '+') G.neg = false;
+        else if (/^[0-8]$/.test(e.key) && +e.key <= 2 * maxTag()) { const n = (G.neg ? -1 : 1) * +e.key; answerQ(String(n)); }
+      } else if (q.type === 'ins') { if (k === 'Y') answerQ('Take'); else if (k === 'N') answerQ('Decline'); }
       else if (one && 'HSDPR'.includes(k) && (k !== 'D' || q.env.canD) && (k !== 'P' || q.env.canS) && (k !== 'R' || q.env.canR)) answerQ(k);
     }
   }
@@ -1910,7 +1997,7 @@ $('tHint').onchange = e => { G.hintMove = e.target.checked; if (G.hintMove) G.us
 $('end').onclick = showResults;
 
 /* test hook (read-only view of internals for the browser tests) */
-window.__bj = { get G() { return G; }, get K() { return K; }, Core, PC, GC, STD, act, dealRound, nextRound, submitCountValue, launch, showResults, takeIns, early, trueC };
+window.__bj = { runNext, get G() { return G; }, get K() { return K; }, Core, PC, GC, STD, act, dealRound, nextRound, submitCountValue, launch, showResults, takeIns, early, trueC };
 
 /* start: restore menu choices, show the intro decks */
 loadSettings();

@@ -109,7 +109,7 @@ function renderControls() {
   const c = $('controls'), p = G.phase, game = G.gm === 'game';
   if (p === 'bet') {
     if (game) return chipUI();
-    c.innerHTML = '<div class="acts"><button class="btn" id="dealBtn">Deal</button></div>'; $('dealBtn').onclick = dealRound; $('dealBtn').focus();
+    c.innerHTML = '<div class="acts"><button class="btn" id="dealBtn">Deal</button></div>'; $('dealBtn').onclick = dealRound; focusSoon('dealBtn');
   } else if (p === 'esur') {
     const best = G.hintMove && Core.earlySurrender(G.hands[0].cards, val(G.dealer[0]), R());
     c.innerHTML = `<div class="acts"><button class="btn ${best ? 'hint' : ''}" data-a="R">Surrender</button><button class="btn ghost ${G.hintMove && !best ? 'hint' : ''}" id="esN">Play on</button></div><div class="small" style="text-align:center;margin-top:6px">Early surrender: the dealer has not checked for blackjack yet.</div>`;
@@ -124,7 +124,7 @@ function renderControls() {
     c.innerHTML = `<div class="acts">${btn.map(([k, n, on]) => `<button class="btn ${best === k ? 'hint' : ''}" data-a="${k}" ${on ? '' : 'disabled'}>${n}</button>`).join('')}</div><div class="small" style="text-align:center;margin-top:6px">Keys: H, S, D, P${canSurr(h) ? ', R' : ''}</div>`;
   } else if (p === 'others' || p === 'dealer') c.innerHTML = `<div class="acts small">${p === 'others' ? 'Other players act…' : 'Dealer plays…'}</div>`;
   else if (p === 'check') { c.innerHTML = ASK_HTML; bindAsk(submitCount); }
-  else if (p === 'between') { c.innerHTML = '<div class="acts"><button class="btn" id="next">Next hand</button></div>'; $('next').onclick = () => nextRound(); $('next').focus(); }
+  else if (p === 'between') { c.innerHTML = '<div class="acts"><button class="btn" id="next">Next hand</button></div>'; $('next').onclick = () => nextRound(); focusSoon('next'); }
   else c.innerHTML = '<div class="acts"></div>';   /* wait, over */
 }
 

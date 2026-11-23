@@ -19,6 +19,8 @@ const store = {
 };
 
 function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+/* focus a button after the current key event finishes, so the Enter/Space that triggered this screen does not also press it */
+const focusSoon = id => setTimeout(() => { const e = $(id); if (e) e.focus(); }, 0);
 function later(fn, ms) { return setTimeout(fn, ms); }
 /* a timer tied to the current session: does nothing if that session has ended or been replaced */
 function laterG(fn, ms) { const g = G; return setTimeout(() => { if (G === g && g.alive) fn(); }, ms); }
