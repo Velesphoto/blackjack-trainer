@@ -4,7 +4,7 @@
    ========================================================================== */
 function showDrill() {
   ['intro', 'table', 'results'].forEach(id => ($(id).hidden = true));
-  $('drill').hidden = false; document.body.classList.remove('prac'); $('chartBtn').hidden = false;
+  $('drill').hidden = false; document.body.classList.remove('prac', 'tbl'); $('chartBtn').hidden = false;
 }
 const randomCard = r => ({ r, s: pick(Core.SUITS), id: ++CID });
 const upCardOf = u => randomCard(u === 11 ? 'A' : u === 10 ? pick(['10', 'J', 'Q', 'K']) : String(u));

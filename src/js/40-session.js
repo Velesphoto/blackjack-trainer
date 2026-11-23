@@ -70,7 +70,7 @@ function startSession() {
   newShoe(); initSeats();
   $('intro').hidden = $('results').hidden = $('drill').hidden = true; $('table').hidden = false;
   $('table').className = g ? 'gm-game' : 'gm-prac';
-  document.body.classList.toggle('prac', !g); $('chartBtn').hidden = g;
+  document.body.classList.toggle('prac', !g); document.body.classList.add('tbl'); $('chartBtn').hidden = g;
   $('heatBox').hidden = !g;
   document.querySelectorAll('.chip3d.thrown').forEach(e => e.remove());
   if (K.dist) scheduleChatter();

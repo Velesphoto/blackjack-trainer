@@ -88,7 +88,7 @@ function showResults() {
   stopClock(); stopSessionTimers(); G.alive = false;
   if (MINI_ON) closeMini(false);
   ['table', 'drill'].forEach(id => ($(id).hidden = true));
-  $('results').hidden = false; document.body.classList.remove('prac');
+  $('results').hidden = false; document.body.classList.remove('prac', 'tbl');
   if (G.kind === 'table' && G.gm === 'game') gameResults();
   else if (G.kind === 'deckrun') deckRunResults();
   else if (G.kind === 'quiz' || G.kind === 'deck') quizResults();

@@ -104,7 +104,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('book')
 function showIntro() {
   stopClock(); stopSessionTimers();
   ['results', 'table', 'drill'].forEach(id => ($(id).hidden = true));
-  document.body.classList.remove('prac'); $('chartBtn').hidden = false;
+  document.body.classList.remove('prac', 'tbl'); $('chartBtn').hidden = false;
   openMenu(GM_MENU);
 }
 

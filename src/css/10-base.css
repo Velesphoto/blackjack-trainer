@@ -28,6 +28,6 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2
 .row2 input[type=range]{flex:1;min-width:60px;accent-color:#7a1e2b}.rv{min-width:4.6ch;text-align:right}
 .cbtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:30;padding:8px 14px;background:#120d0acc;backdrop-filter:blur(6px)}
 .ptog{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:152px;z-index:30;display:none;gap:8px;align-items:center;padding:6px 12px;border-radius:999px;background:#120d0acc;border:1px solid #d6ad5299;color:var(--text)}
-body.prac .ptog{display:flex}
+body.tbl .ptog{display:flex}
 @media(pointer:coarse){.ptog{display:none!important}}
 @media(max-width:480px){.wrap{padding:54px 8px 8px}.cbtn{padding:6px 10px;font-size:.85rem}}
